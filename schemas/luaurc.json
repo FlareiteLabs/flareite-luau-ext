@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": ".luaurc",
+  "description": "Luau's configuration for the files in this folder and its subfolders. A folder's .luaurc changes its parent folder's.",
+  "type": "object",
+  "properties": {
+    "languageMode": {
+      "description": "How strictly types are checked. A file's own `--!strict`, `--!nonstrict`, or `--!nocheck` comment wins.",
+      "enum": ["nocheck", "nonstrict", "strict"],
+      "enumDescriptions": [
+        "Don't check types.",
+        "Check types, assuming `any` where a type can't be inferred.",
+        "Check types, inferring them as precisely as possible."
+      ]
+    },
+    "lint": {
+      "description": "Which lints are on, by name; `\"*\"` sets them all.",
+      "type": "object",
+      "properties": {
+        "*": { "type": "boolean", "description": "Every lint." },
+        "UnknownGlobal": { "type": "boolean", "description": "A global that isn't known." },
+        "DeprecatedGlobal": { "type": "boolean", "description": "A deprecated global." },
+        "GlobalUsedAsLocal": { "type": "boolean", "description": "A global used only in one function, as a local would be." },
+        "LocalShadow": { "type": "boolean", "description": "A local with the name of another in scope." },
+        "SameLineStatement": { "type": "boolean", "description": "Statements on one line that look like one." },
+        "MultiLineStatement": { "type": "boolean", "description": "A statement split across lines confusingly." },
+        "LocalUnused": { "type": "boolean", "description": "A local that's never used." },
+        "FunctionUnused": { "type": "boolean", "description": "A local function that's never used." },
+        "ImportUnused": { "type": "boolean", "description": "A required module that's never used." },
+        "BuiltinGlobalWrite": { "type": "boolean", "description": "Assigning to a built-in global." },
+        "PlaceholderRead": { "type": "boolean", "description": "Reading the `_` placeholder." },
+        "UnreachableCode": { "type": "boolean", "description": "Code that can't run." },
+        "UnknownType": { "type": "boolean", "description": "Comparing `type()` or `typeof()` with a type that doesn't exist." },
+        "ForRange": { "type": "boolean", "description": "A numeric for loop that doesn't run, or runs strangely." },
+        "UnbalancedAssignment": { "type": "boolean", "description": "Assigning more or fewer values than variables." },
+        "ImplicitReturn": { "type": "boolean", "description": "A function that returns values on some paths and nothing on others." },
+        "DuplicateLocal": { "type": "boolean", "description": "Two locals of one name in one statement." },
+        "FormatString": { "type": "boolean", "description": "An invalid format or pattern string." },
+        "TableLiteral": { "type": "boolean", "description": "A key given twice in a table." },
+        "UninitializedLocal": { "type": "boolean", "description": "A local read before it's assigned." },
+        "DuplicateFunction": { "type": "boolean", "description": "A function defined twice." },
+        "DeprecatedApi": { "type": "boolean", "description": "A deprecated API." },
+        "TableOperations": { "type": "boolean", "description": "A table library call that's likely wrong." },
+        "DuplicateCondition": { "type": "boolean", "description": "A condition tested twice." },
+        "MisleadingAndOr": { "type": "boolean", "description": "`a and b or c` where `b` may be false or nil." },
+        "CommentDirective": { "type": "boolean", "description": "An unknown `--!` comment." },
+        "IntegerParsing": { "type": "boolean", "description": "An integer literal that's out of range or ambiguous." },
+        "ComparisonPrecedence": { "type": "boolean", "description": "A comparison that reads as another, such as `not a == b`." },
+        "RedundantNativeAttribute": { "type": "boolean", "description": "`@native` on a function in a native module." }
+      },
+      "additionalProperties": { "type": "boolean" }
+    },
+    "lintErrors": {
+      "description": "Report lints as errors rather than warnings.",
+      "type": "boolean"
+    },
+    "typeErrors": {
+      "description": "Report type errors.",
+      "type": "boolean"
+    },
+    "globals": {
+      "description": "Extra global names, which aren't reported as unknown.",
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "aliases": {
+      "description": "Names for folders, for requires: `require(\"@name/module\")`. Paths are relative to the folder of this .luaurc.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9_.-]+$"
+      },
+      "additionalProperties": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}
