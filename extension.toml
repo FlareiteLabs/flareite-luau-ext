@@ -1,8 +1,8 @@
 # Luau: highlighting from a Tree-sitter grammar compiled to WebAssembly, and
 # luau-lsp, which Flareite runs. The code configures luau-lsp from the
 # settings (Roblox's types and docs, which Flareite downloads, or plain
-# Luau), and keeps a Rojo project's sourcemap.json up to date with
-# `rojo sourcemap --watch`. See Flareite's docs/extensions.md#languages.
+# Luau). In Rojo projects, the Rojo extension keeps the sourcemap.json
+# luau-lsp reads. See Flareite's docs/extensions.md#languages.
 id = "flareite.luau"
 name = "Luau"
 version = "0.1.0"
@@ -12,18 +12,14 @@ icon = "icon.svg"
 api_version = "1"
 entrypoint = "target/wasm32-unknown-unknown/release/luau.wasm"
 activation = ["on-language:luau"]
-on_folder_changed = "flareite.luau.configure"
 on_configuration_changed = "flareite.luau.configure"
 
 [engines]
 flareite = ">=0.1.0"
 
-# language_servers: luau-lsp. processes: Rojo, for sourcemaps. files_read: to
-# see whether the open folder is a Rojo project.
+# language_servers: luau-lsp.
 [permissions]
 language_servers = true
-processes = true
-files_read = true
 
 [build]
 command = "cargo"
@@ -65,27 +61,13 @@ root_markers = [".luaurc", "default.project.json", "rokit.toml", "aftman.toml", 
 [language_servers.settings]
 "luau-lsp.platform.type" = "roblox"
 
-# Rojo writes sourcemap.json, which luau-lsp reads to resolve requires and
-# instance paths.
-[[programs]]
-name = "rojo"
-
 [[commands]]
 id = "flareite.luau.restartServer"
 title = "Restart Language Server"
 
 [[commands]]
-id = "flareite.luau.regenerateSourcemap"
-title = "Regenerate Sourcemap"
-
-[[commands]]
 id = "flareite.luau.configure"
 title = "Apply Settings"
-hidden = true
-
-[[commands]]
-id = "flareite.luau.sourcemapStopped"
-title = "Sourcemap Generation Stopped"
 hidden = true
 
 [configuration.platform]
@@ -99,21 +81,6 @@ type = "string"
 default = "PluginSecurity"
 choices = ["None", "LocalUserSecurity", "PluginSecurity", "RobloxScriptSecurity"]
 description = "With the Roblox platform: which Roblox APIs to know, by the security level they need. PluginSecurity covers games and plugins."
-
-[configuration.sourcemap]
-type = "boolean"
-default = true
-description = "With the Roblox platform, in a Rojo project: keep sourcemap.json up to date by running `rojo sourcemap --watch`, so luau-lsp resolves requires and instances."
-
-[configuration.rojo_project_file]
-type = "string"
-default = "default.project.json"
-description = "The Rojo project file sourcemaps are made from, in the open folder."
-
-[configuration.sourcemap_include_non_scripts]
-type = "boolean"
-default = true
-description = "Include instances that aren't scripts (models, folders, values) in the sourcemap, so their paths complete."
 
 [[schemas]]
 files = [".luaurc"]

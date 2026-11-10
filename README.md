@@ -16,7 +16,8 @@ in the folders that list them. To use one elsewhere, set its path:
 command = "C:/tools/luau-lsp.exe"
 ```
 
-For sourcemaps, install [Rojo](https://rojo.space) the same way.
+In Rojo projects, install the **Rojo** extension too: it keeps the `sourcemap.json` luau-lsp
+resolves requires with.
 
 ## Roblox
 
@@ -27,14 +28,12 @@ again once they're a day old. **Roblox Security Level** picks which APIs it know
 `PluginSecurity` (the default) covers games and plugins.
 
 **Sourcemaps.** luau-lsp resolves `require(script.Parent.Module)` and instance paths with a
-`sourcemap.json` that Rojo writes. When the open folder is trusted and has a Rojo project file
-(`default.project.json`, or the **Rojo Project File** setting), the extension runs
-`rojo sourcemap --watch`, which keeps it up to date as files change. Turn off **Sourcemap** to
-manage it yourself. **Luau: Regenerate Sourcemap** starts Rojo again.
+`sourcemap.json` that Rojo writes. The **Rojo** extension keeps it up to date in Rojo projects;
+luau-lsp picks up its changes as they're written.
 
 ## Plain Luau
 
-Set **Platform** to `standard` for Luau outside Roblox: no Roblox types, and no Rojo.
+Set **Platform** to `standard` for Luau outside Roblox: no Roblox types.
 
 ## More settings
 
