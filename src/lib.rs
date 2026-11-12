@@ -13,15 +13,60 @@
 //! In Rojo projects, luau-lsp resolves requires and instance paths with the
 //! `sourcemap.json` the Rojo extension keeps up to date; Flareite tells
 //! luau-lsp when it changes.
+//!
+//! It also types `end` for blocks as Enter opens them (API 1.19, see
+//! [`blocks`]).
+
+mod blocks;
 
 use flareite_extension_api::types::{
   Activation, CommandContext, ConfigValue, DocumentChange, DocumentId, DocumentInfo, LogLevel,
 };
-use flareite_extension_api::{Guest, export_extension, host, language_servers};
+use flareite_extension_api::{Guest, export_extension, host, language_features, language_servers};
 
 const SERVER: &str = "luau-lsp";
 const RESTART_SERVER: &str = "flareite.luau.restartServer";
 const CONFIGURE: &str = "flareite.luau.configure";
+/// The command that answers what to insert as Enter is pressed.
+const AUTO_INSERT: &str = "flareite.luau.autoInsert";
+/// Most lines one read returns.
+const READ_LINES: u32 = 10_000;
+
+/// Answers an auto-insert request after Enter with `end`, if a block
+/// needs one.
+fn auto_insert() {
+  let Some(request) = language_features::inserting() else {
+    return;
+  };
+  if request.trigger != "\n" {
+    return;
+  }
+  let Ok(document) = host::document(request.document) else {
+    return;
+  };
+  // The whole document, as it was when Enter was pressed.
+  let mut lines = Vec::new();
+  let mut start = 0;
+  while start < document.line_count {
+    let Ok(slice) = host::read_lines(request.document, start, start + READ_LINES) else {
+      return;
+    };
+    if slice.version != request.version || slice.lines.is_empty() {
+      return;
+    }
+    start += slice.lines.len() as u32;
+    lines.extend(slice.lines);
+  }
+  let (line, column) = (
+    request.position.line as usize,
+    request.position.column as usize,
+  );
+  if let Some((text, cursor)) = blocks::after_enter(&lines, line, column, &request.indent)
+    && let Err(problem) = language_features::set_insert(&text, cursor as u32)
+  {
+    host::log(LogLevel::Error, &format!("can't insert `end`: {problem:?}"));
+  }
+}
 
 /// Roblox's types for a security level are at this address, then
 /// `<level>.d.luau`.
@@ -110,6 +155,7 @@ impl Guest for Luau {
   fn run_command(command: String, _context: CommandContext) -> Result<(), String> {
     match command.as_str() {
       CONFIGURE => configure(),
+      AUTO_INSERT => auto_insert(),
       RESTART_SERVER => language_servers::restart(SERVER).map_err(|error| format!("{error:?}"))?,
       _ => return Err(format!("unknown command {command}")),
     }

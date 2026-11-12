@@ -31,6 +31,23 @@ again once they're a day old. **Roblox Security Level** picks which APIs it know
 `sourcemap.json` that Rojo writes. The **Rojo** extension keeps it up to date in Rojo projects;
 luau-lsp picks up its changes as they're written.
 
+## `end` typed for you
+
+As in Roblox Studio, Enter after a line that opens a block (`function f()`, `local function`,
+`if x then`, `for ... do`, `while ... do`, `do`) puts the cursor on an indented line with the
+block's `end` below it, when the block doesn't have one yet:
+
+```luau
+if ready then
+    |
+end
+```
+
+Nothing is added when the blocks already balance, or when the block already has a body below it.
+Closing brackets after the cursor go after `end`, as in `pcall(function() ... end)`. Undo takes
+back just the `end`. Reading the document as Enter is pressed is why the extension asks to read
+documents.
+
 ## Plain Luau
 
 Set **Platform** to `standard` for Luau outside Roblox: no Roblox types.

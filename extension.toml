@@ -5,7 +5,7 @@
 # luau-lsp reads. See Flareite's docs/extensions.md#languages.
 id = "flareite.luau"
 name = "Luau"
-version = "0.2.0"
+version = "0.3.0"
 description = "Luau highlighting, and luau-lsp with Roblox's types for diagnostics, hover, definitions, and completion."
 author = "Flareite"
 icon = "icon.svg"
@@ -17,9 +17,11 @@ on_configuration_changed = "flareite.luau.configure"
 [engines]
 flareite = ">=0.1.0"
 
-# language_servers: luau-lsp.
+# language_servers: luau-lsp. documents_read: reading the document as Enter
+# is pressed, to type `end`.
 [permissions]
 language_servers = true
+documents_read = true
 
 [build]
 command = "cargo"
@@ -36,6 +38,57 @@ folds = "queries/folds.scm"
 # For Toggle Line Comment (Ctrl+/), and `--#region` folding.
 line_comment = "--"
 block_comment = ["--[[", "]]"]
+# Brackets and quotes typed in pairs, as in VS Code's language configuration.
+brackets = [["{", "}"], ["[", "]"], ["(", ")"]]
+auto_closing_pairs = [
+  [
+    "{",
+    "}",
+  ],
+  [
+    "[",
+    "]",
+  ],
+  [
+    "(",
+    ")",
+  ],
+  { open = '"', close = '"', not_in = [
+    "string",
+  ] },
+  { open = "'", close = "'", not_in = [
+    "string",
+  ] },
+  { open = "`", close = "`", not_in = [
+    "string",
+  ] },
+]
+surrounding_pairs = [
+  [
+    "{",
+    "}",
+  ],
+  [
+    "[",
+    "]",
+  ],
+  [
+    "(",
+    ")",
+  ],
+  [
+    '"',
+    '"',
+  ],
+  [
+    "'",
+    "'",
+  ],
+  [
+    "`",
+    "`",
+  ],
+]
 
 # .luaurc files are JSON: highlighted by the extension that declares JSON,
 # and checked against schemas/luaurc.json below.
@@ -75,6 +128,19 @@ title = "Restart Language Server"
 id = "flareite.luau.configure"
 title = "Apply Settings"
 hidden = true
+
+[[commands]]
+id = "flareite.luau.autoInsert"
+title = "End a Block"
+hidden = true
+
+# `end` typed for you, as in Roblox Studio: Enter after `function f()`,
+# `if x then`, or `for ... do` whose `end` is missing puts the cursor on an
+# indented line with `end` below it (API 1.19).
+[[auto_insert_providers]]
+languages = ["luau"]
+trigger_characters = ["\n"]
+command = "flareite.luau.autoInsert"
 
 [configuration.platform]
 type = "string"
