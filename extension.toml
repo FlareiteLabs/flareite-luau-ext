@@ -5,14 +5,15 @@
 # luau-lsp reads. See Flareite's docs/extensions.md#languages.
 id = "flareite.luau"
 name = "Luau"
-version = "0.3.0"
+version = "1.0.0"
 description = "Luau highlighting, and luau-lsp with Roblox's types for diagnostics, hover, definitions, and completion."
 author = "Flareite"
 icon = "icon.svg"
-api_version = "1"
+api_version = "2"
 entrypoint = "target/wasm32-unknown-unknown/release/luau.wasm"
 activation = ["on-language:luau"]
-on_configuration_changed = "flareite.luau.configure"
+# Configures luau-lsp again as the settings change.
+events = ["configuration-changed"]
 
 [engines]
 flareite = ">=0.1.0"
@@ -124,23 +125,12 @@ root_markers = [
 id = "flareite.luau.restartServer"
 title = "Restart Language Server"
 
-[[commands]]
-id = "flareite.luau.configure"
-title = "Apply Settings"
-hidden = true
-
-[[commands]]
-id = "flareite.luau.autoInsert"
-title = "End a Block"
-hidden = true
-
 # `end` typed for you, as in Roblox Studio: Enter after `function f()`,
 # `if x then`, or `for ... do` whose `end` is missing puts the cursor on an
-# indented line with `end` below it (API 1.19).
+# indented line with `end` below it.
 [[auto_insert_providers]]
 languages = ["luau"]
 trigger_characters = ["\n"]
-command = "flareite.luau.autoInsert"
 
 [configuration.platform]
 type = "string"

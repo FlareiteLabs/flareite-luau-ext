@@ -14,58 +14,46 @@
 //! `sourcemap.json` the Rojo extension keeps up to date; Flareite tells
 //! luau-lsp when it changes.
 //!
-//! It also types `end` for blocks as Enter opens them (API 1.19, see
-//! [`blocks`]).
+//! It also types `end` for blocks as Enter opens them (see [`blocks`]).
 
 mod blocks;
 
-use flareite_extension_api::types::{
-  Activation, CommandContext, ConfigValue, DocumentChange, DocumentId, DocumentInfo, LogLevel,
-};
-use flareite_extension_api::{Guest, export_extension, host, language_features, language_servers};
+use flareite_extension_api::events::Event;
+use flareite_extension_api::language_features::{AutoInsertRequest, Insertion};
+use flareite_extension_api::types::{Activation, CommandContext, ConfigValue, LogLevel};
+use flareite_extension_api::{Extension, host, language_servers, register};
 
 const SERVER: &str = "luau-lsp";
 const RESTART_SERVER: &str = "flareite.luau.restartServer";
-const CONFIGURE: &str = "flareite.luau.configure";
-/// The command that answers what to insert as Enter is pressed.
-const AUTO_INSERT: &str = "flareite.luau.autoInsert";
 /// Most lines one read returns.
 const READ_LINES: u32 = 10_000;
 
-/// Answers an auto-insert request after Enter with `end`, if a block
-/// needs one.
-fn auto_insert() {
-  let Some(request) = language_features::inserting() else {
-    return;
-  };
+/// `end` to insert after Enter, if a block needs one.
+fn auto_insert(request: &AutoInsertRequest) -> Option<Insertion> {
   if request.trigger != "\n" {
-    return;
+    return None;
   }
-  let Ok(document) = host::document(request.document) else {
-    return;
-  };
+  let document = host::document(request.document).ok()?;
   // The whole document, as it was when Enter was pressed.
   let mut lines = Vec::new();
   let mut start = 0;
   while start < document.line_count {
-    let Ok(slice) = host::read_lines(request.document, start, start + READ_LINES) else {
-      return;
-    };
+    let slice = host::read_lines(request.document, start, start + READ_LINES).ok()?;
     if slice.version != request.version || slice.lines.is_empty() {
-      return;
+      return None;
     }
-    start += slice.lines.len() as u32;
+    start += u32::try_from(slice.lines.len()).ok()?;
     lines.extend(slice.lines);
   }
   let (line, column) = (
     request.position.line as usize,
     request.position.column as usize,
   );
-  if let Some((text, cursor)) = blocks::after_enter(&lines, line, column, &request.indent)
-    && let Err(problem) = language_features::set_insert(&text, cursor as u32)
-  {
-    host::log(LogLevel::Error, &format!("can't insert `end`: {problem:?}"));
-  }
+  let (text, cursor) = blocks::after_enter(&lines, line, column, &request.indent)?;
+  Some(Insertion {
+    text,
+    cursor: u32::try_from(cursor).ok()?,
+  })
 }
 
 /// Roblox's types for a security level are at this address, then
@@ -143,33 +131,37 @@ fn configure() {
 
 struct Luau;
 
-impl Guest for Luau {
-  fn activate(_context: Activation) -> Result<(), String> {
+impl Extension for Luau {
+  fn activate(_: Activation) -> Result<Self, String> {
     // Before luau-lsp starts: it waits for this.
     configure();
-    Ok(())
+    Ok(Luau)
   }
 
-  fn deactivate() {}
+  fn run_command(&mut self, command: &str, _: CommandContext) -> Result<(), String> {
+    match command {
+      RESTART_SERVER => language_servers::restart(SERVER).map_err(|error| format!("{error:?}")),
+      _ => Err(format!("unknown command {command}")),
+    }
+  }
 
-  fn run_command(command: String, _context: CommandContext) -> Result<(), String> {
-    match command.as_str() {
-      CONFIGURE => configure(),
-      AUTO_INSERT => auto_insert(),
-      RESTART_SERVER => language_servers::restart(SERVER).map_err(|error| format!("{error:?}"))?,
-      _ => return Err(format!("unknown command {command}")),
+  /// The settings changed (the manifest's `events`): configure luau-lsp again.
+  fn handle_event(&mut self, event: Event) -> Result<(), String> {
+    if let Event::ConfigurationChanged = event {
+      configure();
     }
     Ok(())
   }
 
-  fn document_opened(_document: DocumentInfo) {}
-
-  fn document_changed(_change: DocumentChange) {}
-
-  fn document_closed(_document: DocumentId) {}
+  fn provide_auto_insert(
+    &mut self,
+    request: AutoInsertRequest,
+  ) -> Result<Option<Insertion>, String> {
+    Ok(auto_insert(&request))
+  }
 }
 
-export_extension!(Luau);
+register!(Luau);
 
 #[cfg(test)]
 mod tests {
